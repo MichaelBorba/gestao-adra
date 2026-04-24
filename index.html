@@ -22,8 +22,6 @@
         .tela { display: none; width: 100%; height: 100%; animation: fadeIn 0.3s ease-out; }
         .tela-ativa { display: flex; flex-direction: column; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
-        
-        /* Switch de Presença */
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #fca5a5; transition: .4s; border-radius: 34px; }
@@ -48,11 +46,11 @@
 
     <div id="modal-login" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-6">
         <div class="bg-white w-full max-w-[340px] p-8 rounded-[40px] shadow-2xl">
-            <h3 class="text-2xl font-bold mb-6 text-emerald-900 text-center uppercase tracking-tighter">Acesso</h3>
+            <h3 class="text-2xl font-bold mb-6 text-emerald-900 text-center uppercase">Acesso</h3>
             <div class="space-y-4">
-                <input type="text" id="login-u" placeholder="Usuário" class="w-full p-4 bg-gray-50 rounded-2xl outline-none border border-transparent focus:border-emerald-500">
-                <input type="password" id="login-p" placeholder="Senha" class="w-full p-4 bg-gray-50 rounded-2xl outline-none border border-transparent focus:border-emerald-500">
-                <button onclick="realizarLogin()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg">ENTRAR</button>
+                <input type="text" id="login-u" placeholder="Usuário" class="w-full p-4 bg-gray-50 rounded-2xl outline-none">
+                <input type="password" id="login-p" placeholder="Senha" class="w-full p-4 bg-gray-50 rounded-2xl outline-none">
+                <button onclick="realizarLogin()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold">ENTRAR</button>
             </div>
         </div>
     </div>
@@ -64,57 +62,49 @@
                 <span class="font-bold text-emerald-900 uppercase">Iniciar Plantão</span>
             </button>
             <div id="area-admin" class="hidden grid grid-cols-2 gap-4">
-                <button onclick="mudarTela('cad-user')" class="btn-card p-6"><span class="text-2xl">👤</span><span class="text-[10px] font-bold uppercase">Novo Usuário</span></button>
-                <button onclick="mudarTela('cad-colab')" class="btn-card p-6"><span class="text-2xl">🤝</span><span class="text-[10px] font-bold uppercase">Novo Colaborador</span></button>
+                <button onclick="mudarTela('cad-user')" class="btn-card p-6 text-center"><span class="text-2xl">👤</span><span class="text-[9px] font-bold uppercase">Gerenciar Acessos</span></button>
+                <button onclick="mudarTela('cad-colab')" class="btn-card p-6 text-center"><span class="text-2xl">🤝</span><span class="text-[9px] font-bold uppercase">Cadastrar Equipe</span></button>
             </div>
-        </div>
-
-        <div id="tela-cad-colab" class="tela space-y-4">
-            <h2 class="text-center font-bold text-emerald-900 uppercase text-xs">Cadastrar Colaborador</h2>
-            <input type="text" id="new-colab-nome" placeholder="Nome Completo" class="p-4 bg-white rounded-2xl w-full outline-none border">
-            <input type="text" id="new-colab-cargo" placeholder="Função (Ex: Educador)" class="p-4 bg-white rounded-2xl w-full outline-none border">
-            <button onclick="cadastrarColaborador()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-md">SALVAR</button>
-            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-xs uppercase">Cancelar</button>
         </div>
 
         <div id="tela-cad-user" class="tela space-y-4">
             <h2 class="text-center font-bold text-emerald-900 uppercase text-xs">Novo Acesso ao Sistema</h2>
             <input type="text" id="new-user-name" placeholder="Nome de usuário" class="p-4 bg-white rounded-2xl w-full outline-none border">
             <input type="password" id="new-user-pass" placeholder="Senha" class="p-4 bg-white rounded-2xl w-full outline-none border">
-            <button onclick="cadastrarNovoUsuario()" class="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-md">CRIAR LOGIN</button>
-            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-xs uppercase">Cancelar</button>
+            <select id="new-user-level" class="p-4 bg-white rounded-2xl w-full outline-none border text-gray-500">
+                <option value="comum">Usuário Comum (Apenas Plantão)</option>
+                <option value="admin">Administrador (Pode cadastrar)</option>
+            </select>
+            <button onclick="cadastrarNovoUsuario()" class="w-full bg-black text-white py-4 rounded-2xl font-bold">CRIAR ACESSO</button>
+            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-xs uppercase">Voltar</button>
         </div>
 
-        <div id="tela-2" class="tela space-y-4"><button onclick="setTurno('Diurno')" class="btn-card w-full py-8 text-xl font-bold">☀️ DIURNO</button><button onclick="setTurno('Noturno')" class="btn-card w-full py-8 text-xl font-bold">🌙 NOTURNO</button></div>
-        <div id="tela-3" class="tela space-y-4"><button onclick="setPosto('Plantão 1')" class="btn-card w-full py-6 text-lg font-bold text-emerald-800">🏢 PLANTÃO 1</button><button onclick="setPosto('Plantão 2')" class="btn-card w-full py-6 text-lg font-bold text-emerald-800">🏢 PLANTÃO 2</button></div>
-        
-        <div id="tela-4" class="tela">
-            <h2 class="text-center font-bold text-gray-400 uppercase text-[10px] mb-4">Lista de Presença</h2>
-            <div id="lista-presenca" class="space-y-3 flex-1 overflow-y-auto pb-4"></div>
-            <button onclick="mudarTela(5)" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg">PRÓXIMO</button>
+        <div id="tela-cad-colab" class="tela space-y-4">
+            <h2 class="text-center font-bold text-emerald-900 uppercase text-xs">Novo Colaborador</h2>
+            <input type="text" id="new-colab-nome" placeholder="Nome Completo" class="p-4 bg-white rounded-2xl w-full outline-none border">
+            <input type="text" id="new-colab-cargo" placeholder="Cargo/Função" class="p-4 bg-white rounded-2xl w-full outline-none border">
+            <button onclick="cadastrarColaborador()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold">SALVAR EQUIPE</button>
+            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-xs uppercase">Voltar</button>
         </div>
 
-        <div id="tela-5" class="tela">
-            <h2 class="font-bold text-gray-400 uppercase text-[10px] mb-2">Relatório de Ocorrências</h2>
-            <textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border border-gray-100 outline-none mb-4" placeholder="Descreva as alterações do plantão..."></textarea>
-            <button id="btn-finalizar" onclick="finalizarSistema()" class="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-2xl">FINALIZAR E ENVIAR</button>
-        </div>
+        <div id="tela-2" class="tela space-y-4"><button onclick="setTurno('Diurno')" class="btn-card w-full py-8 text-xl font-bold uppercase">☀️ Diurno</button><button onclick="setTurno('Noturno')" class="btn-card w-full py-8 text-xl font-bold uppercase">🌙 Noturno</button></div>
+        <div id="tela-3" class="tela space-y-4"><button onclick="setPosto('Plantão 1')" class="btn-card w-full py-6 text-lg font-bold">🏢 PLANTÃO 1</button><button onclick="setPosto('Plantão 2')" class="btn-card w-full py-6 text-lg font-bold">🏢 PLANTÃO 2</button></div>
+        <div id="tela-4" class="tela"><div id="lista-presenca" class="space-y-3 flex-1 overflow-y-auto pb-4"></div><button onclick="mudarTela(5)" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg">PRÓXIMO</button></div>
+        <div id="tela-5" class="tela"><textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border outline-none mb-4" placeholder="Ocorrências..."></textarea><button id="btn-finalizar" onclick="finalizarSistema()" class="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-2xl">FINALIZAR E ENVIAR</button></div>
     </main>
 
     <footer class="p-4 flex justify-between items-center border-t bg-white">
-        <button onclick="window.location.reload()" class="text-red-400 font-bold text-[10px] uppercase">Sair</button>
+        <button onclick="window.location.reload()" class="text-red-400 font-bold text-[10px] uppercase tracking-tighter">Sair/Logout</button>
         <button onclick="mudarTela(1)" class="w-12 h-12 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg -mt-8 border-4 border-[#f8faf9]">🏠</button>
         <div class="w-10"></div>
     </footer>
 </div>
 
 <script>
-    // CONFIGURAÇÕES SUPABASE
     const SUPABASE_URL = "https://vnanxhmfevppfzxuoqcx.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYW54aG1mZXZwcGZ6eHVvcWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5OTM3MzQsImV4cCI6MjA5MjU2OTczNH0.bxt7h9KvrO8H9iPMjinGQYclH9ONsmLgQLJ9e8073YE";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // CONFIGURAÇÃO EMAILJS
     emailjs.init("I9oSFhUe0oXhhSMRZ");
 
     let userAtivo = null;
@@ -122,7 +112,7 @@
 
     function mudarTela(n) {
         document.querySelectorAll('.tela').forEach(t => t.classList.remove('tela-ativa'));
-        const target = document.getElementById(n.toString().length > 1 ? 'tela-'+n : 'tela-'+n);
+        const target = document.getElementById(n.toString().includes('cad') ? 'tela-'+n : 'tela-'+n);
         if(target) target.classList.add('tela-ativa');
     }
 
@@ -130,30 +120,39 @@
         const u = document.getElementById('login-u').value;
         const p = document.getElementById('login-p').value;
         const { data } = await _supabase.from('perfis').select('*').eq('usuario', u).eq('senha', p).single();
+        
         if (data) {
             userAtivo = data;
-            document.getElementById('nome-operador').innerText = data.usuario;
+            document.getElementById('nome-operador').innerText = `${data.usuario} (${data.nivel})`;
             document.getElementById('user-tag').classList.remove('hidden');
             document.getElementById('modal-login').style.display = 'none';
-            if(data.nivel === 'admin') document.getElementById('area-admin').classList.remove('hidden');
+            
+            // Controle de botões Admin
+            if(data.nivel === 'admin') {
+                document.getElementById('area-admin').classList.remove('hidden');
+            } else {
+                document.getElementById('area-admin').classList.add('hidden');
+            }
             mudarTela(1);
-        } else { alert("Acesso Negado."); }
-    }
-
-    async function cadastrarColaborador() {
-        const nome = document.getElementById('new-colab-nome').value;
-        const cargo = document.getElementById('new-colab-cargo').value;
-        if(!nome) return alert("Informe o nome!");
-        const { error } = await _supabase.from('colaboradores').insert([{ nome, cargo }]);
-        if(!error) { alert("Cadastrado com sucesso!"); mudarTela(1); }
+        } else { alert("Usuário ou senha inválidos."); }
     }
 
     async function cadastrarNovoUsuario() {
         const usuario = document.getElementById('new-user-name').value;
         const senha = document.getElementById('new-user-pass').value;
-        if(!usuario || !senha) return alert("Preencha todos os campos!");
-        const { error } = await _supabase.from('perfis').insert([{ usuario, senha, nivel: 'comum' }]);
-        if(!error) { alert("Acesso criado!"); mudarTela(1); }
+        const nivel = document.getElementById('new-user-level').value;
+        if(!usuario || !senha) return alert("Preencha tudo!");
+        
+        const { error } = await _supabase.from('perfis').insert([{ usuario, senha, nivel }]);
+        if(!error) { alert("Usuário criado!"); mudarTela(1); }
+    }
+
+    async function cadastrarColaborador() {
+        const nome = document.getElementById('new-colab-nome').value;
+        const cargo = document.getElementById('new-colab-cargo').value;
+        if(!nome) return alert("Nome obrigatório");
+        const { error } = await _supabase.from('colaboradores').insert([{ nome, cargo }]);
+        if(!error) { alert("Equipe atualizada!"); mudarTela(1); }
     }
 
     function setTurno(t) { dadosPlantao.turno = t; mudarTela(3); }
@@ -174,53 +173,35 @@
     async function finalizarSistema() {
         const btn = document.getElementById('btn-finalizar');
         const obs = document.getElementById('obs').value;
-        btn.innerText = "ENVIANDO...";
-        btn.disabled = true;
+        btn.innerText = "ENVIANDO..."; btn.disabled = true;
         
-        // 1. Salvar no Banco
         const { error } = await _supabase.from('historico_plantao').insert([{
             operador: userAtivo.usuario, turno: dadosPlantao.turno, posto: dadosPlantao.posto, ocorrencias: obs, equipe_json: dadosPlantao.equipe
         }]);
 
-        if(error) {
-            alert("Erro ao salvar no banco.");
-            btn.innerText = "TENTAR NOVAMENTE";
-            btn.disabled = false;
-            return;
-        }
+        if(error) { alert("Erro no banco!"); btn.innerText = "Tentar novamente"; btn.disabled = false; return; }
 
-        // 2. Enviar E-mail
         const listaEquipe = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '[✓]' : '[X]'} ${c.nome} (${c.cargo})`).join('\n');
-        const params = { 
-            operador: userAtivo.usuario, 
-            posto: dadosPlantao.posto, 
-            turno: dadosPlantao.turno, 
-            equipe: listaEquipe, 
-            ocorrencias: obs || "Sem alterações relevantes." 
-        };
-
-        emailjs.send("service_gu3p4c9", "template_1qbl82i", params)
-            .then(() => {
-                alert("Plantão Finalizado! E-mail enviado para a coordenação.");
-                gerarPDF(obs);
-            })
-            .catch((err) => {
-                alert("Banco salvo, mas e-mail falhou. Verifique conexão.");
-                console.log(err);
-                gerarPDF(obs);
-            });
+        
+        emailjs.send("service_5790mht", "template_1qbl82i", { 
+            operador: userAtivo.usuario, posto: dadosPlantao.posto, turno: dadosPlantao.turno, equipe: listaEquipe, ocorrencias: obs || "Sem alterações." 
+        }).then(() => {
+            alert("Relatório enviado por e-mail!");
+            gerarPDF(obs);
+        }).catch((err) => {
+            alert("Erro no envio do e-mail. O PDF será gerado mesmo assim.");
+            gerarPDF(obs);
+        });
     }
 
     function gerarPDF(obs) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        const dataH = new Date().toLocaleString('pt-BR');
-        doc.text("ADRA - RELATÓRIO DE PLANTÃO", 20, 20);
+        doc.text("ADRA - ABRIGO BOM JESUS", 20, 20);
         doc.text(`Unidade: ${dadosPlantao.posto} | Responsável: ${userAtivo.usuario}`, 20, 30);
-        doc.text(`Data/Hora: ${dataH}`, 20, 40);
-        doc.text("Ocorrências:", 20, 60);
-        doc.text(doc.splitTextToSize(obs || "Sem alterações.", 170), 20, 70);
-        doc.save(`Relatorio_${dadosPlantao.posto}.pdf`);
+        doc.text("Ocorrências:", 20, 50);
+        doc.text(doc.splitTextToSize(obs || "Sem alterações.", 170), 20, 60);
+        doc.save("Relatorio_Plantao.pdf");
         window.location.reload();
     }
 </script>
