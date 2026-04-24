@@ -106,8 +106,11 @@
             <button onclick="setPosto('Plantão 1')" class="btn-card w-full py-6 text-lg font-bold uppercase text-emerald-800">🏢 Plantão 1</button>
             <button onclick="setPosto('Plantão 2')" class="btn-card w-full py-6 text-lg font-bold uppercase text-emerald-800">🏢 Plantão 2</button>
         </div>
+
         <div id="tela-4" class="tela">
-            <h3 class="text-center font-bold text-gray-400 uppercase text-[10px] mb-4">Lista de Presença da Equipe</h3>
+            <h3 class="text-center font-bold text-gray-400 uppercase text-[10px] mb-2">Lista de Presença da Equipe</h3>
+            <input type="text" id="filtro-equipe" onkeyup="renderEquipe()" placeholder="🔍 Buscar colaborador..." class="w-full p-3 mb-3 bg-white rounded-xl border border-emerald-100 outline-none focus:border-emerald-500 text-sm">
+            
             <div id="lista-presenca" class="space-y-3 flex-1 overflow-y-auto pb-4"></div>
             <button onclick="mudarTela(5)" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold uppercase shadow-lg">Continuar para Relato</button>
         </div>
@@ -119,7 +122,6 @@
             </div>
             <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest px-1 mb-1">Ocorrências do Plantão</span>
             <textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border-2 border-emerald-100 outline-none mb-4 shadow-inner text-sm leading-relaxed" placeholder="Digite aqui todas as alterações..."></textarea>
-            
             <button id="btn-finalizar" onclick="finalizarSistema()" class="w-full bg-black text-white py-5 rounded-2xl font-black uppercase shadow-2xl tracking-widest">Finalizar e Enviar E-mail</button>
         </div>
     </main>
@@ -135,7 +137,6 @@
     const SUPABASE_URL = "https://vnanxhmfevppfzxuoqcx.supabase.co";
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYW54aG1mZXZwcGZ6eHVvcWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5OTM3MzQsImV4cCI6MjA5MjU2OTczNH0.bxt7h9KvrO8H9iPMjinGQYclH9ONsmLgQLJ9e8073YE";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     emailjs.init("I9oSFhUe0oXhhSMRZ");
 
     let userAtivo = null;
@@ -186,12 +187,20 @@
         }
     }
 
+    // Função renderEquipe modificada apenas para incluir o filtro de busca
     function renderEquipe() {
-        document.getElementById('lista-presenca').innerHTML = dadosPlantao.equipe.map((c, i) => `
-            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-emerald-50">
-                <div><div class="font-bold text-[13px] text-emerald-900">${c.nome}</div><div class="text-[8px] text-gray-400 uppercase tracking-tighter">${c.cargo}</div></div>
-                <label class="switch"><input type="checkbox" ${c.status === 'Presente' ? 'checked' : ''} onchange="atualizarStatus(${i}, this.checked)"><span class="slider"></span></label>
-            </div>`).join('');
+        const termo = document.getElementById('filtro-equipe').value.toLowerCase();
+        document.getElementById('lista-presenca').innerHTML = dadosPlantao.equipe
+            .filter(c => c.nome.toLowerCase().includes(termo))
+            .map((c, i) => {
+                // Encontrar o índice original no array global para manter o status correto
+                const originalIndex = dadosPlantao.equipe.findIndex(item => item.nome === c.nome);
+                return `
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-emerald-50">
+                    <div><div class="font-bold text-[13px] text-emerald-900">${c.nome}</div><div class="text-[8px] text-gray-400 uppercase tracking-tighter">${c.cargo}</div></div>
+                    <label class="switch"><input type="checkbox" ${c.status === 'Presente' ? 'checked' : ''} onchange="atualizarStatus(${originalIndex}, this.checked)"><span class="slider"></span></label>
+                </div>`;
+            }).join('');
     }
 
     function atualizarStatus(index, isChecked) {
@@ -207,66 +216,29 @@
         document.getElementById('modal-preview').classList.add('flex');
     }
 
-    function fecharPreview() {
-        document.getElementById('modal-preview').classList.add('hidden');
-    }
+    function fecharPreview() { document.getElementById('modal-preview').classList.add('hidden'); }
 
     async function finalizarSistema() {
         const btn = document.getElementById('btn-finalizar');
         const obs = document.getElementById('obs').value;
-        
-        btn.innerText = "ENVIANDO...";
-        btn.disabled = true;
-        
+        btn.innerText = "ENVIANDO..."; btn.disabled = true;
         const listaTexto = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '[✓]' : '[X]'} ${c.nome}`).join('\n');
-        
         const { error: dbError } = await _supabase.from('historico_plantao').insert([{
-            operador: userAtivo.usuario, 
-            turno: dadosPlantao.turno, 
-            posto: dadosPlantao.posto, 
-            ocorrencias: obs || "Sem alterações.", 
-            equipe_json: dadosPlantao.equipe
+            operador: userAtivo.usuario, turno: dadosPlantao.turno, posto: dadosPlantao.posto, ocorrencias: obs || "Sem alterações.", equipe_json: dadosPlantao.equipe
         }]);
-
-        if(dbError) {
-            btn.disabled = false;
-            btn.innerText = "Finalizar e Enviar";
-            return alert("Erro ao salvar no banco.");
-        }
-
-        const templateParams = { 
-            operador: String(userAtivo.usuario), 
-            posto: String(dadosPlantao.posto), 
-            turno: String(dadosPlantao.turno), 
-            equipe: String(listaTexto), 
-            ocorrencias: String(obs || "Sem alterações.")
-        };
-
-        emailjs.send("service_5790mht", "template_q5u8886", templateParams)
-        .then(() => {
-            alert("Sucesso! Relatório enviado.");
-            gerarPDF(obs);
-        })
-        .catch((err) => {
-            console.error("Erro:", err);
-            alert("Erro no e-mail, mas os dados foram salvos no banco.");
-            gerarPDF(obs);
-        });
+        if(dbError) { btn.disabled = false; btn.innerText = "Finalizar e Enviar"; return alert("Erro ao salvar no banco."); }
+        emailjs.send("service_5790mht", "template_q5u8886", { 
+            operador: String(userAtivo.usuario), posto: String(dadosPlantao.posto), turno: String(dadosPlantao.turno), equipe: String(listaTexto), ocorrencias: String(obs || "Sem alterações.")
+        }).then(() => { alert("Sucesso!"); gerarPDF(obs); }).catch(() => { alert("Erro e-mail!"); gerarPDF(obs); });
     }
 
     function gerarPDF(obs) {
         const { jsPDF } = window.jspdf;
         const doc = new jsPDF();
-        doc.setFontSize(18);
-        doc.text("ADRA - RELATÓRIO DE PLANTÃO", 20, 20);
-        doc.setFontSize(12);
+        doc.text("ADRA - RELATÓRIO", 20, 20);
         doc.text(`Responsável: ${userAtivo.usuario}`, 20, 35);
-        doc.text(`Unidade: ${dadosPlantao.posto} | Turno: ${dadosPlantao.turno}`, 20, 45);
-        doc.text("Ocorrências Registradas:", 20, 65);
-        doc.setFontSize(10);
-        const splitText = doc.splitTextToSize(obs || "Sem alterações.", 170);
-        doc.text(splitText, 20, 75);
-        doc.save(`Relatorio_${dadosPlantao.posto}_${userAtivo.usuario}.pdf`);
+        doc.text(doc.splitTextToSize(obs || "Sem alterações.", 170), 20, 55);
+        doc.save(`Relatorio_${userAtivo.usuario}.pdf`);
         window.location.reload();
     }
 </script>
