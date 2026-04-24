@@ -182,21 +182,26 @@
             operador: userAtivo.usuario, turno: dadosPlantao.turno, posto: dadosPlantao.posto, ocorrencias: obs, equipe_json: dadosPlantao.equipe
         }]);
 
-        if(error) { alert("Erro ao salvar dados."); btn.innerText = "Tentar Novamente"; btn.disabled = false; return; }
+        if(error) { alert("Erro ao salvar no banco."); btn.innerText = "Tentar Novamente"; btn.disabled = false; return; }
 
         const listaEquipe = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '[✓]' : '[X]'} ${c.nome}`).join('\n');
         
-        // ENVIO DE E-MAIL COM service_gu3p4c9 e template_q5u8886
+        // ENVIO COM service_gu3p4c9 e template_q5u8886
+        // Adicionamos redundância de variáveis para evitar o Erro 400
         emailjs.send("service_gu3p4c9", "template_q5u8886", { 
             operador: userAtivo.usuario, 
             posto: dadosPlantao.posto, 
             turno: dadosPlantao.turno, 
             equipe: listaEquipe, 
-            ocorrencias: obs || "Sem alterações." 
+            ocorrencias: obs || "Sem alterações.",
+            name: userAtivo.usuario, // Proteção contra template padrão
+            title: "Relatório " + dadosPlantao.posto, // Proteção contra template padrão
+            email: "sistema@adra.org" // Proteção contra template padrão
         }).then(() => {
             alert("Sucesso! E-mail enviado.");
             gerarPDF(obs);
         }).catch((err) => {
+            console.error("Erro detalhado:", err);
             alert("E-mail falhou (Status: " + err.status + "). Dados salvos no banco!");
             gerarPDF(obs);
         });
