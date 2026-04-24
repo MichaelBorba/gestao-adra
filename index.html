@@ -35,10 +35,10 @@
 <div class="max-w-[500px] mx-auto h-screen bg-[#f8faf9] shadow-2xl flex flex-col relative overflow-hidden">
     
     <header class="bg-[#007d5c] p-6 rounded-b-[50px] shadow-xl text-center z-10">
-        <div class="bg-white inline-block p-2 rounded-2xl mb-2 shadow-md">
-            <img src="https://static.wixstatic.com/media/2956c5_44bf991606b14fdd84cfcedcc8a19d83~mv2.png/v1/fill/w_1120,h_760,al_c/adra.png" class="h-10 object-contain">
+        <div class="bg-white inline-block p-4 rounded-3xl mb-2 shadow-md">
+            <img src="https://static.wixstatic.com/media/2956c5_44bf991606b14fdd84cfcedcc8a19d83~mv2.png/v1/fill/w_1120,h_760,al_c/adra.png" class="h-16 w-auto object-contain">
         </div>
-        <h1 class="text-white text-lg font-black uppercase tracking-tighter">Abrigo Bom Jesus</h1>
+        <h1 class="text-white text-xl font-black uppercase tracking-tighter">Abrigo Bom Jesus</h1>
         <div id="user-tag" class="hidden mt-2 text-[11px] bg-black/30 text-white py-1.5 px-5 rounded-full inline-flex items-center gap-2 border border-emerald-400/50">
             <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_#34d399]"></span>
             <span id="nome-operador" class="font-bold text-emerald-300 tracking-widest uppercase">---</span>
@@ -114,13 +114,13 @@
 
         <div id="tela-5" class="tela">
             <div class="flex justify-between items-center mb-2 px-1">
-                <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest">Ocorrências</span>
+                <button onclick="mudarTela(4)" class="text-[10px] bg-gray-200 text-gray-700 px-4 py-1.5 rounded-full font-bold uppercase border border-gray-300 shadow-sm">⬅️ Voltar Lista</button>
                 <button onclick="abrirPreview()" class="text-[10px] bg-white text-emerald-700 px-4 py-1.5 rounded-full font-bold uppercase border border-emerald-100 shadow-sm">👁️ Ver Resumo</button>
             </div>
+            <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest px-1 mb-1">Ocorrências do Plantão</span>
             <textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border-2 border-emerald-100 outline-none mb-4 shadow-inner text-sm leading-relaxed" placeholder="Digite aqui todas as alterações..."></textarea>
             
             <button id="btn-finalizar" onclick="finalizarSistema()" class="w-full bg-black text-white py-5 rounded-2xl font-black uppercase shadow-2xl tracking-widest">Finalizar e Enviar E-mail</button>
-            <p class="text-[9px] text-center text-gray-400 mt-2 uppercase italic">O envio por e-mail garante o sigilo das informações.</p>
         </div>
     </main>
 
@@ -136,7 +136,6 @@
     const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYW54aG1mZXZwcGZ6eHVvcWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5OTM3MzQsImV4cCI6MjA5MjU2OTczNH0.bxt7h9KvrO8H9iPMjinGQYclH9ONsmLgQLJ9e8073YE";
     const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-    // Inicialização do EmailJS
     emailjs.init("I9oSFhUe0oXhhSMRZ");
 
     let userAtivo = null;
@@ -144,7 +143,7 @@
 
     function mudarTela(n) {
         document.querySelectorAll('.tela').forEach(t => t.classList.remove('tela-ativa'));
-        const target = document.getElementById(n.toString().includes('cad') ? 'tela-'+n : 'tela-'+n);
+        const target = document.getElementById('tela-' + n);
         if(target) target.classList.add('tela-ativa');
     }
 
@@ -221,7 +220,6 @@
         
         const listaTexto = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '[✓]' : '[X]'} ${c.nome}`).join('\n');
         
-        // 1. Salva no Supabase (Segurança de Dados)
         const { error: dbError } = await _supabase.from('historico_plantao').insert([{
             operador: userAtivo.usuario, 
             turno: dadosPlantao.turno, 
@@ -233,30 +231,25 @@
         if(dbError) {
             btn.disabled = false;
             btn.innerText = "Finalizar e Enviar";
-            return alert("Erro ao salvar no banco. Verifique a conexão.");
+            return alert("Erro ao salvar no banco.");
         }
 
-        // 2. Envio EmailJS (Blidagem contra erro 400)
-        // Corrigido para o Service ID: service_5790mht que funcionou no seu teste
         const templateParams = { 
             operador: String(userAtivo.usuario), 
             posto: String(dadosPlantao.posto), 
             turno: String(dadosPlantao.turno), 
             equipe: String(listaTexto), 
-            ocorrencias: String(obs || "Sem alterações."),
-            name: String(userAtivo.usuario),
-            title: "Relatório de Plantão"
+            ocorrencias: String(obs || "Sem alterações.")
         };
 
         emailjs.send("service_5790mht", "template_q5u8886", templateParams)
         .then(() => {
-            alert("Sucesso! Relatório salvo e enviado por e-mail.");
+            alert("Sucesso! Relatório enviado.");
             gerarPDF(obs);
         })
         .catch((err) => {
-            console.error("Erro no envio:", err);
-            // Se falhar o e-mail, ainda geramos o PDF para não perder o trabalho
-            alert("O e-mail falhou (Erro " + err.status + "), mas os dados foram salvos no banco com segurança.");
+            console.error("Erro:", err);
+            alert("Erro no e-mail, mas os dados foram salvos no banco.");
             gerarPDF(obs);
         });
     }
