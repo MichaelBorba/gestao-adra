@@ -2,7 +2,7 @@
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>ADRA - Abrigo Bom Jesus</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
@@ -11,7 +11,8 @@
     
     <style>
         :root { --verde: #007d5c; --bg: #f0f4f3; }
-        body { background-color: var(--bg); font-family: sans-serif; height: 100vh; overflow: hidden; }
+        body { background-color: var(--bg); font-family: sans-serif; height: 100vh; overflow: hidden; margin: 0; }
+        
         .btn-card {
             background: #ffffff; border-radius: 24px;
             box-shadow: 6px 6px 12px #d1d9d7, -6px -6px 12px #ffffff;
@@ -19,15 +20,29 @@
             align-items: center; justify-content: center; border: 2px solid transparent;
         }
         .btn-card:active { transform: scale(0.97); border-color: var(--verde); }
-        .tela { display: none; width: 100%; height: 100%; animation: fadeIn 0.3s ease-out; }
+        
+        /* Ajuste de scroll e visualização para telas mobile */
+        .tela { 
+            display: none; 
+            width: 100%; 
+            height: 100%; 
+            animation: fadeIn 0.3s ease-out; 
+            padding-bottom: 80px; /* Garante que o conteúdo não fique sob o rodapé */
+            overflow-y: auto;
+        }
         .tela-ativa { display: flex; flex-direction: column; }
+        
         @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
         .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
         .switch input { opacity: 0; width: 0; height: 0; }
         .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #fca5a5; transition: .4s; border-radius: 34px; }
         .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
         input:checked + .slider { background-color: #86efac; }
         input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Esconde barra de scroll feia */
+        ::-webkit-scrollbar { width: 0px; background: transparent; }
     </style>
 </head>
 <body>
@@ -40,7 +55,6 @@
         </div>
         <h1 class="text-white text-xl font-black uppercase tracking-tighter">Abrigo Bom Jesus</h1>
         <div id="user-tag" class="hidden mt-2 text-[11px] bg-black/30 text-white py-1.5 px-5 rounded-full inline-flex items-center gap-2 border border-emerald-400/50">
-            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse shadow-[0_0_8px_#34d399]"></span>
             <span id="nome-operador" class="font-bold text-emerald-300 tracking-widest uppercase">---</span>
         </div>
     </header>
@@ -56,15 +70,8 @@
         </div>
     </div>
 
-    <div id="modal-preview" class="fixed inset-0 bg-black/90 z-[10000] hidden flex-col p-6 backdrop-blur-md">
-        <div class="bg-white flex-1 rounded-[30px] p-6 overflow-y-auto shadow-inner">
-            <h2 class="font-black text-emerald-900 mb-4 border-b-2 border-emerald-100 pb-2 uppercase text-sm tracking-tighter">Conferência do Relatório</h2>
-            <div id="preview-content" class="text-xs space-y-2 text-gray-800 whitespace-pre-wrap leading-relaxed"></div>
-        </div>
-        <button onclick="fecharPreview()" class="mt-4 bg-emerald-600 text-white py-4 rounded-2xl font-bold uppercase shadow-xl">Voltar para Edição</button>
-    </div>
-
-    <main class="flex-1 p-6 overflow-y-auto">
+    <main class="flex-1 p-6 overflow-hidden">
+        
         <div id="tela-1" class="tela tela-ativa space-y-6">
             <button onclick="mudarTela(2)" class="btn-card w-full h-32">
                 <span class="text-3xl mb-1">📝</span>
@@ -76,31 +83,12 @@
             </div>
         </div>
 
-        <div id="tela-cad-user" class="tela space-y-4">
-            <h2 class="text-center font-bold text-emerald-900 uppercase text-xs">Novo Login</h2>
-            <input type="text" id="new-user-name" placeholder="Usuário" class="p-4 bg-white rounded-2xl w-full border outline-none">
-            <input type="password" id="new-user-pass" placeholder="Senha" class="p-4 bg-white rounded-2xl w-full border outline-none">
-            <select id="new-user-level" class="p-4 bg-white rounded-2xl w-full border outline-none">
-                <option value="comum">Padrão</option>
-                <option value="admin">Administrador</option>
-            </select>
-            <button onclick="cadastrarNovoUsuario()" class="w-full bg-black text-white py-4 rounded-2xl font-bold uppercase">Salvar</button>
-            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-xs uppercase">Cancelar</button>
-        </div>
-
-        <div id="tela-cad-colab" class="tela space-y-4">
-            <h2 class="text-center font-bold text-emerald-900 uppercase text-xs">Cadastro Equipe</h2>
-            <input type="text" id="new-colab-nome" placeholder="Nome Completo" class="p-4 bg-white rounded-2xl w-full border outline-none">
-            <input type="text" id="new-colab-cargo" placeholder="Cargo/Função" class="p-4 bg-white rounded-2xl w-full border outline-none">
-            <button onclick="cadastrarColaborador()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold uppercase">Salvar Colaborador</button>
-            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-xs uppercase">Voltar</button>
-        </div>
-
         <div id="tela-2" class="tela space-y-4">
             <h3 class="text-center font-bold text-gray-400 uppercase text-[10px]">Selecione o Turno</h3>
             <button onclick="setTurno('Diurno')" class="btn-card w-full py-8 text-xl font-bold uppercase">☀️ Diurno</button>
             <button onclick="setTurno('Noturno')" class="btn-card w-full py-8 text-xl font-bold uppercase">🌙 Noturno</button>
         </div>
+
         <div id="tela-3" class="tela space-y-4">
             <h3 class="text-center font-bold text-gray-400 uppercase text-[10px]">Unidade de Plantão</h3>
             <button onclick="setPosto('Plantão 1')" class="btn-card w-full py-6 text-lg font-bold uppercase text-emerald-800">🏢 Plantão 1</button>
@@ -108,29 +96,31 @@
         </div>
 
         <div id="tela-4" class="tela">
-            <h3 class="text-center font-bold text-gray-400 uppercase text-[10px] mb-2">Lista de Presença da Equipe</h3>
+            <h3 class="text-center font-bold text-gray-400 uppercase text-[10px] mb-2">Lista de Presença</h3>
             <input type="text" id="filtro-equipe" onkeyup="renderEquipe()" placeholder="🔍 Buscar colaborador..." class="w-full p-3 mb-3 bg-white rounded-xl border border-emerald-100 outline-none focus:border-emerald-500 text-sm">
-            
-            <div id="lista-presenca" class="space-y-3 flex-1 overflow-y-auto pb-4"></div>
+            <div id="lista-presenca" class="space-y-3 pb-10"></div>
             <button onclick="mudarTela(5)" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold uppercase shadow-lg">Continuar para Relato</button>
         </div>
 
         <div id="tela-5" class="tela">
             <div class="flex justify-between items-center mb-2 px-1">
-                <button onclick="mudarTela(4)" class="text-[10px] bg-gray-200 text-gray-700 px-4 py-1.5 rounded-full font-bold uppercase border border-gray-300 shadow-sm">⬅️ Voltar Lista</button>
-                <button onclick="abrirPreview()" class="text-[10px] bg-white text-emerald-700 px-4 py-1.5 rounded-full font-bold uppercase border border-emerald-100 shadow-sm">👁️ Ver Resumo</button>
+                <button onclick="mudarTela(4)" class="text-[10px] bg-gray-200 text-gray-700 px-4 py-1.5 rounded-full font-bold uppercase border border-gray-300">⬅️ Voltar</button>
+                <button onclick="abrirPreview()" class="text-[10px] bg-white text-emerald-700 px-4 py-1.5 rounded-full font-bold uppercase border border-emerald-100">👁️ Resumo</button>
             </div>
-            <span class="text-[10px] font-black text-emerald-700 uppercase tracking-widest px-1 mb-1">Ocorrências do Plantão</span>
-            <textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border-2 border-emerald-100 outline-none mb-4 shadow-inner text-sm leading-relaxed" placeholder="Digite aqui todas as alterações..."></textarea>
-            <button id="btn-finalizar" onclick="finalizarSistema()" class="w-full bg-black text-white py-5 rounded-2xl font-black uppercase shadow-2xl tracking-widest">Finalizar e Enviar E-mail</button>
+            <textarea id="obs" class="flex-1 w-full min-h-[200px] p-6 rounded-[30px] bg-white border-2 border-emerald-100 outline-none mb-4 shadow-inner text-sm" placeholder="Digite as alterações..."></textarea>
+            <button id="btn-finalizar" onclick="finalizarSistema()" class="w-full bg-black text-white py-5 rounded-2xl font-black uppercase shadow-2xl tracking-widest">Finalizar e Enviar</button>
         </div>
+
     </main>
 
-    <footer class="p-4 flex justify-between items-center border-t bg-white/80 backdrop-blur">
-        <button onclick="window.location.reload()" class="text-red-400 font-bold text-[10px] uppercase tracking-tighter">Sair do Sistema</button>
-        <button onclick="mudarTela(1)" class="w-12 h-12 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg -mt-8 border-4 border-[#f8faf9] active:scale-90 transition-transform">🏠</button>
-        <div class="w-10"></div>
-    </footer>
+    <footer class="p-4 pb-8 flex justify-between items-center border-t bg-white/80 backdrop-blur relative z-20">
+        <button onclick="window.location.reload()" class="text-red-400 font-bold text-[10px] uppercase tracking-tighter">Sair</button>
+        
+        <button onclick="mudarTela(1)" class="w-14 h-14 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg absolute left-1/2 -translate-x-1/2 -top-10 border-4 border-[#f8faf9] active:scale-90 transition-transform">
+            🏠
+        </button>
+        
+        <div class="w-10"></div> </footer>
 </div>
 
 <script>
@@ -145,7 +135,10 @@
     function mudarTela(n) {
         document.querySelectorAll('.tela').forEach(t => t.classList.remove('tela-ativa'));
         const target = document.getElementById('tela-' + n);
-        if(target) target.classList.add('tela-ativa');
+        if(target) {
+            target.classList.add('tela-ativa');
+            target.scrollTop = 0; // Volta o scroll pro topo ao mudar
+        }
     }
 
     async function realizarLogin() {
@@ -162,21 +155,6 @@
         } else { alert("Dados incorretos."); }
     }
 
-    async function cadastrarNovoUsuario() {
-        const usuario = document.getElementById('new-user-name').value;
-        const senha = document.getElementById('new-user-pass').value;
-        const nivel = document.getElementById('new-user-level').value;
-        const { error } = await _supabase.from('perfis').insert([{ usuario, senha, nivel }]);
-        if(!error) { alert("Acesso criado!"); mudarTela(1); }
-    }
-
-    async function cadastrarColaborador() {
-        const nome = document.getElementById('new-colab-nome').value;
-        const cargo = document.getElementById('new-colab-cargo').value;
-        const { error } = await _supabase.from('colaboradores').insert([{ nome, cargo }]);
-        if(!error) { alert("Equipe atualizada!"); mudarTela(1); }
-    }
-
     function setTurno(t) { dadosPlantao.turno = t; mudarTela(3); }
     async function setPosto(p) { 
         dadosPlantao.posto = p; mudarTela(4); 
@@ -187,13 +165,11 @@
         }
     }
 
-    // Função renderEquipe modificada apenas para incluir o filtro de busca
     function renderEquipe() {
         const termo = document.getElementById('filtro-equipe').value.toLowerCase();
         document.getElementById('lista-presenca').innerHTML = dadosPlantao.equipe
             .filter(c => c.nome.toLowerCase().includes(termo))
             .map((c, i) => {
-                // Encontrar o índice original no array global para manter o status correto
                 const originalIndex = dadosPlantao.equipe.findIndex(item => item.nome === c.nome);
                 return `
                 <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-emerald-50">
@@ -207,39 +183,17 @@
         dadosPlantao.equipe[index].status = isChecked ? 'Presente' : 'Faltou';
     }
 
-    function abrirPreview() {
-        const obs = document.getElementById('obs').value;
-        const lista = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '✅' : '❌'} ${c.nome}`).join('\n');
-        const resumo = `--- RELATÓRIO ADRA ---\nRESPONSÁVEL: ${userAtivo.usuario}\nUNIDADE: ${dadosPlantao.posto}\nTURNO: ${dadosPlantao.turno}\n\nEQUIPE:\n${lista}\n\nOCORRÊNCIAS:\n${obs || "Nada a declarar."}`;
-        document.getElementById('preview-content').innerText = resumo;
-        document.getElementById('modal-preview').classList.remove('hidden');
-        document.getElementById('modal-preview').classList.add('flex');
-    }
-
-    function fecharPreview() { document.getElementById('modal-preview').classList.add('hidden'); }
-
     async function finalizarSistema() {
         const btn = document.getElementById('btn-finalizar');
         const obs = document.getElementById('obs').value;
         btn.innerText = "ENVIANDO..."; btn.disabled = true;
-        const listaTexto = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '[✓]' : '[X]'} ${c.nome}`).join('\n');
         const { error: dbError } = await _supabase.from('historico_plantao').insert([{
             operador: userAtivo.usuario, turno: dadosPlantao.turno, posto: dadosPlantao.posto, ocorrencias: obs || "Sem alterações.", equipe_json: dadosPlantao.equipe
         }]);
-        if(dbError) { btn.disabled = false; btn.innerText = "Finalizar e Enviar"; return alert("Erro ao salvar no banco."); }
+        if(dbError) { btn.disabled = false; btn.innerText = "Finalizar e Enviar"; return alert("Erro no banco."); }
         emailjs.send("service_5790mht", "template_q5u8886", { 
-            operador: String(userAtivo.usuario), posto: String(dadosPlantao.posto), turno: String(dadosPlantao.turno), equipe: String(listaTexto), ocorrencias: String(obs || "Sem alterações.")
-        }).then(() => { alert("Sucesso!"); gerarPDF(obs); }).catch(() => { alert("Erro e-mail!"); gerarPDF(obs); });
-    }
-
-    function gerarPDF(obs) {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF();
-        doc.text("ADRA - RELATÓRIO", 20, 20);
-        doc.text(`Responsável: ${userAtivo.usuario}`, 20, 35);
-        doc.text(doc.splitTextToSize(obs || "Sem alterações.", 170), 20, 55);
-        doc.save(`Relatorio_${userAtivo.usuario}.pdf`);
-        window.location.reload();
+            operador: userAtivo.usuario, posto: dadosPlantao.posto, turno: dadosPlantao.turno, ocorrencias: obs || "Sem alterações."
+        }).then(() => { alert("Sucesso!"); window.location.reload(); });
     }
 </script>
 </body>
