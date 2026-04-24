@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>ADRA - Abrigo Bom Jesus</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        :root { --verde: #007d5c; --bg: #f0f4f3; }
+        body { background-color: var(--bg); font-family: sans-serif; height: 100vh; overflow: hidden; }
+        .btn-card {
+            background: #ffffff; border-radius: 24px;
+            box-shadow: 6px 6px 12px #d1d9d7, -6px -6px 12px #ffffff;
+            transition: all 0.2s; display: flex; flex-direction: column; 
+            align-items: center; justify-content: center; border: 2px solid transparent;
+        }
+        .btn-card:active { transform: scale(0.97); border-color: var(--verde); }
+        .tela { display: none; width: 100%; height: 100%; animation: fadeIn 0.3s ease-out; }
+        .tela-ativa { display: flex; flex-direction: column; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(5px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 34px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--verde); }
+        input:checked + .slider:before { transform: translateX(20px); }
+    </style>
+</head>
+<body>
+
+<div class="max-w-[500px] mx-auto h-screen bg-[#f8faf9] shadow-2xl flex flex-col relative overflow-hidden">
+    
+    <header class="bg-[#007d5c] p-6 rounded-b-[50px] shadow-xl text-center z-10">
+        <div class="bg-white inline-block p-2 rounded-2xl mb-2 shadow-md">
+            <img src="https://static.wixstatic.com/media/2956c5_44bf991606b14fdd84cfcedcc8a19d83~mv2.png/v1/fill/w_1120,h_760,al_c/adra.png" class="h-10 object-contain">
+        </div>
+        <h1 class="text-white text-lg font-black uppercase">Abrigo Bom Jesus</h1>
+        <div id="user-tag" class="hidden mt-2 text-[10px] bg-black/20 text-white py-1 px-4 rounded-full inline-flex items-center gap-2">
+            <span id="nome-operador">---</span>
+        </div>
+    </header>
+
+    <div id="modal-login" class="fixed inset-0 bg-black/80 backdrop-blur-sm z-[9999] flex items-center justify-center p-6">
+        <div class="bg-white w-full max-w-[340px] p-8 rounded-[40px] shadow-2xl text-center">
+            <h3 class="text-2xl font-bold mb-6 text-emerald-900">Entrar</h3>
+            <div class="space-y-4 text-left">
+                <input type="text" id="login-u" placeholder="Usuário" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500">
+                <input type="password" id="login-p" placeholder="Senha" class="w-full p-4 bg-gray-50 rounded-2xl outline-none focus:ring-2 focus:ring-emerald-500">
+                <button onclick="realizarLogin()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg">CONECTAR</button>
+            </div>
+        </div>
+    </div>
+
+    <main class="flex-1 p-6 overflow-y-auto">
+        <div id="tela-1" class="tela tela-ativa space-y-6">
+            <button onclick="mudarTela(2)" class="btn-card w-full h-32">
+                <span class="text-3xl mb-1">📋</span>
+                <span class="font-bold text-emerald-900 uppercase">Iniciar Plantão</span>
+            </button>
+            <div id="area-admin" class="hidden grid grid-cols-2 gap-4">
+                <button onclick="mudarTela('cad-user')" class="btn-card p-6">
+                    <span class="text-2xl mb-1">👤</span>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">Novo Usuário</span>
+                </button>
+                <button onclick="mudarTela('cad-colab')" class="btn-card p-6">
+                    <span class="text-2xl mb-1">🤝</span>
+                    <span class="text-[10px] font-bold text-gray-500 uppercase">Novo Colaborador</span>
+                </button>
+            </div>
+        </div>
+
+        <div id="tela-cad-colab" class="tela space-y-4">
+            <h2 class="text-center font-bold text-emerald-900">CADASTRAR COLABORADOR</h2>
+            <input type="text" id="new-colab-nome" placeholder="Nome do Funcionário" class="p-4 bg-white rounded-2xl shadow-sm w-full outline-none border border-gray-100">
+            <input type="text" id="new-colab-cargo" placeholder="Função (Ex: Educador, Vigilante)" class="p-4 bg-white rounded-2xl shadow-sm w-full outline-none border border-gray-100">
+            <button onclick="cadastrarColaborador()" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-md">SALVAR NA EQUIPE</button>
+            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-sm">Voltar</button>
+        </div>
+
+        <div id="tela-cad-user" class="tela space-y-4">
+            <h2 class="text-center font-bold text-emerald-900">NOVO ACESSO AO SISTEMA</h2>
+            <input type="text" id="new-user-name" placeholder="Usuário para login" class="p-4 bg-white rounded-2xl shadow-sm w-full outline-none border border-gray-100">
+            <input type="password" id="new-user-pass" placeholder="Senha" class="p-4 bg-white rounded-2xl shadow-sm w-full outline-none border border-gray-100">
+            <select id="new-user-level" class="p-4 bg-white rounded-2xl shadow-sm w-full outline-none border border-gray-100">
+                <option value="comum">Operador Comum</option>
+                <option value="admin">Administrador</option>
+            </select>
+            <button onclick="cadastrarNovoUsuario()" class="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-md">CRIAR LOGIN</button>
+            <button onclick="mudarTela(1)" class="text-center text-gray-400 w-full text-sm">Voltar</button>
+        </div>
+
+        <div id="tela-2" class="tela space-y-4"><h2 class="text-center font-bold text-emerald-900">TURNO</h2><button onclick="setTurno('Diurno')" class="btn-card w-full py-8 text-xl font-bold">☀️ DIURNO</button><button onclick="setTurno('Noturno')" class="btn-card w-full py-8 text-xl font-bold">🌙 NOTURNO</button></div>
+        <div id="tela-3" class="tela space-y-4"><h2 class="text-center font-bold text-emerald-900 text-sm uppercase">Unidade de Serviço</h2><button onclick="setPosto('Plantão 1')" class="btn-card w-full py-6 text-lg font-bold">🏢 PLANTÃO 1</button><button onclick="setPosto('Plantão 2')" class="btn-card w-full py-6 text-lg font-bold">🏢 PLANTÃO 2</button></div>
+        <div id="tela-4" class="tela"><h2 class="text-center font-bold mb-4 uppercase text-[10px] text-gray-400">Verificação de Efetivo</h2><div id="lista-presenca" class="space-y-3 flex-1 overflow-y-auto px-1 pb-4"></div><button onclick="mudarTela(5)" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold shadow-lg">PRÓXIMO</button></div>
+        <div id="tela-5" class="tela"><h2 class="font-bold mb-3 uppercase text-[10px] text-gray-400">Relatório de Ocorrências</h2><textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border border-gray-100 outline-none" placeholder="Digite as alterações..."></textarea><button onclick="salvarEGerar()" class="w-full bg-black text-white py-4 rounded-2xl font-bold mt-4 shadow-xl">FINALIZAR E GERAR PDF</button></div>
+    </main>
+
+    <footer class="p-4 flex justify-between items-center border-t bg-white/80 backdrop-blur-md">
+        <button onclick="window.location.reload()" class="text-red-400 font-bold text-[10px] uppercase">Logout</button>
+        <button onclick="mudarTela(1)" class="w-12 h-12 flex items-center justify-center rounded-full bg-emerald-600 text-white shadow-lg -mt-10 border-4 border-[#f8faf9]">🏠</button>
+        <div class="w-10"></div>
+    </footer>
+</div>
+
+<script>
+    const SUPABASE_URL = "https://vnanxhmfevppfzxuoqcx.supabase.co";
+    const SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InZuYW54aG1mZXZwcGZ6eHVvcWN4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzY5OTM3MzQsImV4cCI6MjA5MjU2OTczNH0.bxt7h9KvrO8H9iPMjinGQYclH9ONsmLgQLJ9e8073YE";
+    const _supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+    let userAtivo = null;
+    let dadosPlantao = { turno: '', posto: '', equipe: [] };
+
+    function mudarTela(n) {
+        document.querySelectorAll('.tela').forEach(t => t.classList.remove('tela-ativa'));
+        document.getElementById('tela-' + n).classList.add('tela-ativa');
+    }
+
+    async function realizarLogin() {
+        const u = document.getElementById('login-u').value;
+        const p = document.getElementById('login-p').value;
+        const { data, error } = await _supabase.from('perfis').select('*').eq('usuario', u).eq('senha', p).single();
+        if (data) {
+            userAtivo = data;
+            document.getElementById('nome-operador').innerText = data.usuario;
+            document.getElementById('user-tag').classList.remove('hidden');
+            document.getElementById('modal-login').style.display = 'none';
+            if(data.nivel === 'admin') document.getElementById('area-admin').classList.remove('hidden');
+            mudarTela(1);
+        } else { alert("Usuário ou senha incorretos!"); }
+    }
+
+    async function cadastrarColaborador() {
+        const nome = document.getElementById('new-colab-nome').value;
+        const cargo = document.getElementById('new-colab-cargo').value;
+        if(!nome) return alert("Digite o nome!");
+        const { error } = await _supabase.from('colaboradores').insert([{ nome, cargo }]);
+        if(!error) {
+            alert("Colaborador salvo com sucesso!");
+            document.getElementById('new-colab-nome').value = "";
+            document.getElementById('new-colab-cargo').value = "";
+            mudarTela(1);
+        } else { alert("Erro ao salvar no banco."); }
+    }
+
+    async function cadastrarNovoUsuario() {
+        const usuario = document.getElementById('new-user-name').value;
+        const senha = document.getElementById('new-user-pass').value;
+        const nivel = document.getElementById('new-user-level').value;
+        if(!usuario || !senha) return alert("Preencha tudo!");
+        const { error } = await _supabase.from('perfis').insert([{ usuario, senha, nivel }]);
+        if(!error) {
+            alert("Login criado!");
+            mudarTela(1);
+        } else { alert("Erro ao criar login."); }
+    }
+
+    function setTurno(t) { dadosPlantao.turno = t; mudarTela(3); }
+    
+    async function setPosto(p) { 
+        dadosPlantao.posto = p; mudarTela(4); 
+        const { data } = await _supabase.from('colaboradores').select('*').order('nome');
+        if(data) {
+            dadosPlantao.equipe = data.map(c => ({ nome: c.nome, cargo: c.cargo || 'Funcionário', status: 'Presente' }));
+            document.getElementById('lista-presenca').innerHTML = dadosPlantao.equipe.map((c, i) => `
+                <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
+                    <div class="flex flex-col">
+                        <span class="font-bold text-emerald-900 text-sm">${c.nome}</span>
+                        <span class="text-[9px] text-gray-400 uppercase">${c.cargo}</span>
+                    </div>
+                    <label class="switch"><input type="checkbox" checked onchange="dadosPlantao.equipe[${i}].status = this.checked ? 'Presente' : 'Faltou'"><span class="slider"></span></label>
+                </div>`).join('');
+        }
+    }
+
+    async function salvarEGerar() {
+        const obs = document.getElementById('obs').value;
+        const { error } = await _supabase.from('historico_plantao').insert([{
+            operador: userAtivo.usuario, turno: dadosPlantao.turno, posto: dadosPlantao.posto, ocorrencias: obs, equipe_json: dadosPlantao.equipe
+        }]);
+
+        if(!error) {
+            alert("Dados salvos no banco de dados!");
+            
+            // GERADOR DE PDF
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF();
+            const dataH = new Date().toLocaleString('pt-BR');
+
+            // Design do PDF
+            doc.setFillColor(0, 125, 92);
+            doc.rect(0, 0, 210, 30, 'F');
+            doc.setTextColor(255, 255, 255);
+            doc.setFontSize(16);
+            doc.text("ADRA - RELATÓRIO DE PLANTÃO", 20, 20);
+            
+            doc.setTextColor(0, 0, 0);
+            doc.setFontSize(10);
+            doc.text(`Data: ${dataH}`, 20, 40);
+            doc.text(`Responsável: ${userAtivo.usuario}`, 20, 48);
+            doc.text(`Unidade: ${dadosPlantao.posto} | Turno: ${dadosPlantao.turno}`, 20, 56);
+            
+            doc.line(20, 62, 190, 62);
+            doc.text("LISTA DE PRESENÇA:", 20, 70);
+            
+            dadosPlantao.equipe.forEach((colab, idx) => {
+                const status = colab.status === 'Presente' ? '[P]' : '[F]';
+                doc.text(`${status} ${colab.nome} (${colab.cargo})`, 25, 80 + (idx * 7));
+            });
+
+            doc.text("OCORRÊNCIAS:", 20, 130);
+            doc.setFontSize(11);
+            const splitObs = doc.splitTextToSize(obs || "Nenhuma alteração registrada.", 170);
+            doc.text(splitObs, 20, 140);
+
+            doc.save(`Plantao_${dadosPlantao.posto}_${dataH}.pdf`);
+            mudarTela(1);
+        } else {
+            alert("Erro ao salvar no banco. Verifique sua internet.");
+        }
+    }
+</script>
+</body>
+</html>
