@@ -39,8 +39,9 @@
             <img src="https://static.wixstatic.com/media/2956c5_44bf991606b14fdd84cfcedcc8a19d83~mv2.png/v1/fill/w_1120,h_760,al_c/adra.png" class="h-10 object-contain">
         </div>
         <h1 class="text-white text-lg font-black uppercase">Abrigo Bom Jesus</h1>
-        <div id="user-tag" class="hidden mt-2 text-[10px] bg-black/20 text-white py-1 px-4 rounded-full inline-flex items-center gap-2">
-            <span id="nome-operador">---</span>
+        <div id="user-tag" class="hidden mt-2 text-[10px] bg-black/20 text-white py-1 px-4 rounded-full inline-flex items-center gap-2 border border-emerald-400">
+            <span class="w-2 h-2 bg-emerald-400 rounded-full animate-pulse"></span>
+            <span id="nome-operador" class="font-bold text-emerald-300">---</span>
         </div>
     </header>
 
@@ -55,11 +56,19 @@
         </div>
     </div>
 
+    <div id="modal-preview" class="fixed inset-0 bg-black/90 z-[10000] hidden flex-col p-6">
+        <div class="bg-white flex-1 rounded-[30px] p-6 overflow-y-auto">
+            <h2 class="font-black text-emerald-900 mb-4 border-b pb-2 uppercase tracking-tighter">Resumo do Plantão</h2>
+            <div id="preview-content" class="text-sm space-y-2 text-gray-700 whitespace-pre-wrap"></div>
+        </div>
+        <button onclick="fecharPreview()" class="mt-4 bg-white text-black py-4 rounded-2xl font-bold uppercase">Fechar Visualização</button>
+    </div>
+
     <main class="flex-1 p-6 overflow-y-auto">
         <div id="tela-1" class="tela tela-ativa space-y-6">
             <button onclick="mudarTela(2)" class="btn-card w-full h-32">
                 <span class="text-3xl mb-1">📋</span>
-                <span class="font-bold text-emerald-900 uppercase">Iniciar Plantão</span>
+                <span class="font-bold text-emerald-900 uppercase">Iniciar/Editar Plantão</span>
             </button>
             <div id="area-admin" class="hidden grid grid-cols-2 gap-4">
                 <button onclick="mudarTela('cad-user')" class="btn-card p-6 text-center"><span class="text-2xl">👤</span><span class="text-[9px] font-bold uppercase">Novo Usuário</span></button>
@@ -97,11 +106,20 @@
         </div>
         <div id="tela-4" class="tela">
             <div id="lista-presenca" class="space-y-3 flex-1 overflow-y-auto pb-4"></div>
-            <button onclick="mudarTela(5)" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold uppercase shadow-lg">Próximo</button>
+            <button onclick="mudarTela(5)" class="w-full bg-emerald-600 text-white py-4 rounded-2xl font-bold uppercase shadow-lg">Escrever Ocorrências</button>
         </div>
+
         <div id="tela-5" class="tela">
-            <textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border outline-none mb-4" placeholder="Ocorrências..."></textarea>
-            <button id="btn-finalizar" onclick="finalizarSistema()" class="w-full bg-black text-white py-4 rounded-2xl font-bold shadow-2xl uppercase">Finalizar Plantão</button>
+            <div class="flex justify-between items-center mb-2 px-2">
+                <span class="text-[10px] font-bold text-gray-400 uppercase italic">Edição em tempo real...</span>
+                <button onclick="abrirPreview()" class="text-[10px] bg-emerald-100 text-emerald-700 px-3 py-1 rounded-full font-bold uppercase border border-emerald-200">👁️ Pré-Visualizar</button>
+            </div>
+            <textarea id="obs" class="flex-1 w-full p-6 rounded-[30px] bg-white border-2 border-emerald-50 outline-none mb-4 shadow-inner" placeholder="Descreva as ocorrências aqui..."></textarea>
+            
+            <div class="grid grid-cols-2 gap-3">
+                <button onclick="finalizarSistema('whatsapp')" class="bg-emerald-500 text-white py-4 rounded-2xl font-bold uppercase text-[10px]">Finalizar no WhatsApp</button>
+                <button id="btn-finalizar" onclick="finalizarSistema('email')" class="bg-black text-white py-4 rounded-2xl font-bold uppercase text-[10px]">Finalizar por E-mail</button>
+            </div>
         </div>
     </main>
 
@@ -134,77 +152,98 @@
         const { data } = await _supabase.from('perfis').select('*').eq('usuario', u).eq('senha', p).single();
         if (data) {
             userAtivo = data;
-            document.getElementById('nome-operador').innerText = `${data.usuario} (${data.nivel})`;
+            document.getElementById('nome-operador').innerText = data.usuario.toUpperCase();
             document.getElementById('user-tag').classList.remove('hidden');
             document.getElementById('modal-login').style.display = 'none';
             if(data.nivel === 'admin') document.getElementById('area-admin').classList.remove('hidden');
             mudarTela(1);
-        } else { alert("Erro de Login."); }
+        } else { alert("Acesso Negado."); }
     }
 
+    // CRUD ADMIN
     async function cadastrarNovoUsuario() {
         const usuario = document.getElementById('new-user-name').value;
         const senha = document.getElementById('new-user-pass').value;
         const nivel = document.getElementById('new-user-level').value;
-        if(!usuario || !senha) return alert("Preencha tudo!");
         const { error } = await _supabase.from('perfis').insert([{ usuario, senha, nivel }]);
-        if(!error) { alert("Novo login criado!"); mudarTela(1); }
+        if(!error) { alert("Usuário criado!"); mudarTela(1); }
     }
 
     async function cadastrarColaborador() {
         const nome = document.getElementById('new-colab-nome').value;
         const cargo = document.getElementById('new-colab-cargo').value;
-        if(!nome) return alert("Nome é obrigatório");
         const { error } = await _supabase.from('colaboradores').insert([{ nome, cargo }]);
         if(!error) { alert("Colaborador salvo!"); mudarTela(1); }
     }
 
+    // FLUXO
     function setTurno(t) { dadosPlantao.turno = t; mudarTela(3); }
     async function setPosto(p) { 
         dadosPlantao.posto = p; mudarTela(4); 
         const { data } = await _supabase.from('colaboradores').select('*').order('nome');
         if(data) {
-            dadosPlantao.equipe = data.map(c => ({ nome: c.nome, cargo: c.cargo || 'Funcionário', status: 'Presente' }));
-            document.getElementById('lista-presenca').innerHTML = dadosPlantao.equipe.map((c, i) => `
-                <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-gray-50">
-                    <div><div class="font-bold text-sm text-emerald-900">${c.nome}</div><div class="text-[9px] text-gray-400 uppercase">${c.cargo}</div></div>
-                    <label class="switch"><input type="checkbox" checked onchange="dadosPlantao.equipe[${i}].status = this.checked ? 'Presente' : 'Faltou'"><span class="slider"></span></label>
-                </div>`).join('');
+            dadosPlantao.equipe = data.map(c => ({ nome: c.nome, cargo: c.cargo || 'Func.', status: 'Presente' }));
+            renderEquipe();
         }
     }
 
-    async function finalizarSistema() {
-        const btn = document.getElementById('btn-finalizar');
+    function renderEquipe() {
+        document.getElementById('lista-presenca').innerHTML = dadosPlantao.equipe.map((c, i) => `
+            <div class="flex justify-between items-center bg-white p-4 rounded-2xl shadow-sm border border-emerald-50">
+                <div><div class="font-bold text-sm text-emerald-900">${c.nome}</div><div class="text-[9px] text-gray-400 uppercase">${c.cargo}</div></div>
+                <label class="switch"><input type="checkbox" ${c.status === 'Presente' ? 'checked' : ''} onchange="atualizarStatus(${i}, this.checked)"><span class="slider"></span></label>
+            </div>`).join('');
+    }
+
+    function atualizarStatus(index, isChecked) {
+        dadosPlantao.equipe[index].status = isChecked ? 'Presente' : 'Faltou';
+    }
+
+    function abrirPreview() {
         const obs = document.getElementById('obs').value;
-        btn.innerText = "ENVIANDO..."; btn.disabled = true;
+        const lista = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '✅' : '❌'} ${c.nome}`).join('\n');
+        const resumo = `RESPONSÁVEL: ${userAtivo.usuario}\nUNIDADE: ${dadosPlantao.posto}\nTURNO: ${dadosPlantao.turno}\n\nEQUIPE:\n${lista}\n\nOCORRÊNCIAS:\n${obs || "Nenhuma alteração."}`;
+        document.getElementById('preview-content').innerText = resumo;
+        document.getElementById('modal-preview').classList.remove('hidden');
+        document.getElementById('modal-preview').classList.add('flex');
+    }
+
+    function fecharPreview() {
+        document.getElementById('modal-preview').classList.add('hidden');
+    }
+
+    async function finalizarSistema(metodo) {
+        const obs = document.getElementById('obs').value;
+        const listaTexto = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '[✓]' : '[X]'} ${c.nome}`).join('\n');
         
+        // 1. Salva no Banco (Supabase)
         const { error } = await _supabase.from('historico_plantao').insert([{
             operador: userAtivo.usuario, turno: dadosPlantao.turno, posto: dadosPlantao.posto, ocorrencias: obs, equipe_json: dadosPlantao.equipe
         }]);
 
-        if(error) { alert("Erro ao salvar no banco."); btn.innerText = "Tentar Novamente"; btn.disabled = false; return; }
+        if(error) return alert("Erro ao salvar dados.");
 
-        const listaEquipe = dadosPlantao.equipe.map(c => `${c.status === 'Presente' ? '[✓]' : '[X]'} ${c.nome}`).join('\n');
-        
-        // ENVIO COM service_gu3p4c9 e template_q5u8886
-        // Adicionamos redundância de variáveis para evitar o Erro 400
-        emailjs.send("service_gu3p4c9", "template_q5u8886", { 
-            operador: userAtivo.usuario, 
-            posto: dadosPlantao.posto, 
-            turno: dadosPlantao.turno, 
-            equipe: listaEquipe, 
-            ocorrencias: obs || "Sem alterações.",
-            name: userAtivo.usuario, // Proteção contra template padrão
-            title: "Relatório " + dadosPlantao.posto, // Proteção contra template padrão
-            email: "sistema@adra.org" // Proteção contra template padrão
-        }).then(() => {
-            alert("Sucesso! E-mail enviado.");
-            gerarPDF(obs);
-        }).catch((err) => {
-            console.error("Erro detalhado:", err);
-            alert("E-mail falhou (Status: " + err.status + "). Dados salvos no banco!");
-            gerarPDF(obs);
-        });
+        if(metodo === 'whatsapp') {
+            const msg = window.encodeURIComponent(`*RELATÓRIO DE PLANTÃO - ADRA*\n\n*Responsável:* ${userAtivo.usuario}\n*Unidade:* ${dadosPlantao.posto}\n*Turno:* ${dadosPlantao.turno}\n\n*EQUIPE:*\n${listaTexto}\n\n*OCORRÊNCIAS:*\n${obs || "Sem alterações."}`);
+            window.open(`https://api.whatsapp.com/send?text=${msg}`);
+            window.location.reload();
+        } else {
+            // Envio por Email (EmailJS) com variáveis de segurança
+            emailjs.send("service_gu3p4c9", "template_q5u8886", { 
+                operador: userAtivo.usuario, 
+                posto: dadosPlantao.posto, 
+                turno: dadosPlantao.turno, 
+                equipe: listaTexto, 
+                ocorrencias: obs || "Sem alterações.",
+                name: userAtivo.usuario, 
+                title: "Relatório " + dadosPlantao.posto
+            }).then(() => {
+                alert("Sucesso! E-mail enviado.");
+                gerarPDF(obs);
+            }).catch((err) => {
+                alert("E-mail falhou (Status: " + err.status + "). Dados salvos no banco. Tente pelo WhatsApp!");
+            });
+        }
     }
 
     function gerarPDF(obs) {
